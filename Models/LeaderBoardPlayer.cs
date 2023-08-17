@@ -2,7 +2,7 @@
 
 namespace LeaderBoard.Models
 {
-    public class LeaderBoard
+    public class LeaderBoardPlayer
     {
         [Required]
         public string? Id { get; set; } = $"player:{Guid.NewGuid()}";

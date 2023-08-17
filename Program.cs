@@ -1,3 +1,4 @@
+using LeaderBoard.Data;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using StackExchange.Redis;
@@ -8,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IConnectionMultiplexer>(opt => 
        ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection"))
 );
+
+builder.Services.AddScoped<ILeaderBoardRepo, LeaderBoardRepo>();
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
