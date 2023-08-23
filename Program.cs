@@ -1,19 +1,18 @@
 using LeaderBoard.Data;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Mvc;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddSingleton<IConnectionMultiplexer>(opt => 
+builder.Services.AddSingleton<IConnectionMultiplexer>(opt =>
        ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection"))
 );
 
 builder.Services.AddScoped<ILeaderBoardRepo, LeaderBoardRepo>();
 
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
+// Add MVC services
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -31,7 +30,10 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
+// Use API controllers
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
 
 app.Run();
