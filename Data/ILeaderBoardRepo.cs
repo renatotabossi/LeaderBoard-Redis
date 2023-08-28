@@ -8,6 +8,6 @@ namespace LeaderBoard.Data
         void UpdatePlayer(LeaderBoardPlayer player);
         void DeletePlayer(LeaderBoardPlayer player);
         LeaderBoardPlayer? GetPlayer(string id);
-        IEnumerable<LeaderBoardPlayer> GetAllPlayers();
+        IEnumerable<LeaderBoardPlayer?>? GetAllPlayers();
     }
 }

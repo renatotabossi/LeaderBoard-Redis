@@ -19,9 +19,19 @@ namespace LeaderBoard.Data
             throw new NotImplementedException();
         }
 
-        public IEnumerable<LeaderBoardPlayer> GetAllPlayers()
+        public IEnumerable<LeaderBoardPlayer?>? GetAllPlayers()
         {
-            throw new NotImplementedException();
+            var db = _redis.GetDatabase();
+
+            var completeSet = db.SetMembers("PlayersSet");
+
+            if ( completeSet.Length > 0) 
+            {
+                var obj = Array.ConvertAll(completeSet, val => JsonSerializer.Deserialize<LeaderBoardPlayer>(val)).ToList();
+                return obj;
+            }
+
+            return null;
         }
 
         public LeaderBoardPlayer? GetPlayer(string id)
@@ -47,6 +57,9 @@ namespace LeaderBoard.Data
             var serialPlayer = JsonSerializer.Serialize(player);
 
             db.StringSet(player.Id, serialPlayer);
+
+            // Usar isso para fazer a leaderboard em si ! ! !
+            db.SetAdd("PlayersSet", serialPlayer);
         }
 
         public void UpdatePlayer(LeaderBoardPlayer player)

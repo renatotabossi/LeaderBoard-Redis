@@ -35,5 +35,11 @@ namespace LeaderBoard.Controllers
 
             return CreatedAtRoute(nameof(GetPlayerById), new { id = player.Id }, player);
         }
+
+        [HttpGet]
+        public ActionResult<IEnumerable<LeaderBoardPlayer>> GetPlayers()
+        {
+            return Ok(_repo.GetAllPlayers());
+        }
     }
 }
