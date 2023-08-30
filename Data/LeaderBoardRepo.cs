@@ -8,11 +8,13 @@ namespace LeaderBoard.Data
     public class LeaderBoardRepo : ILeaderBoardRepo
     {
         private readonly IConnectionMultiplexer _redis;
+        private readonly IDatabase _db;
         private readonly RedisKey _sortedSetKey;
 
         public LeaderBoardRepo(IConnectionMultiplexer redis)
         {
             _redis = redis;
+            _db = _redis.GetDatabase();
             _sortedSetKey = "Leaderboard";
         }
 
@@ -23,16 +25,14 @@ namespace LeaderBoard.Data
 
         public IEnumerable<LeaderBoardPlayer?>? GetAllPlayers()
         {
-            var db = _redis.GetDatabase();
-
-            var leaderboardPlayers = db.SortedSetRangeByRankWithScores(_sortedSetKey, start: 0, stop: -1, order: Order.Descending);
+            var leaderboardPlayers = _db.SortedSetRangeByRankWithScores(_sortedSetKey, start: 0, stop: -1, order: Order.Descending);
 
             foreach (var player in leaderboardPlayers)
             {
                 var playerIdAndScore = player.ToString().Split(':');
-                var playerId = playerIdAndScore[1];
-                var playerName = playerIdAndScore[2];
-                var score = playerIdAndScore[3];
+                var playerId = playerIdAndScore[0];
+                var playerName = playerIdAndScore[1];
+                var score = playerIdAndScore[2];
 
 
 
@@ -49,9 +49,7 @@ namespace LeaderBoard.Data
         {
             if (string.IsNullOrEmpty(id)) throw new ArgumentNullException(nameof(id));
 
-            var db = _redis.GetDatabase();
-
-            var player = db.HashGet("hashPlayer", id);
+            var player = _db.HashGet("hashPlayer", id);
 
             if (!string.IsNullOrEmpty(player))
             {
@@ -64,9 +62,7 @@ namespace LeaderBoard.Data
         {
             if (player == null) throw new ArgumentNullException(nameof(player));
 
-            var db = _redis.GetDatabase();
-
-            db.SortedSetAdd(_sortedSetKey, $"{player.Id}:{player.Name}", player.Mmr);
+            _db.SortedSetAdd(_sortedSetKey, $"{player.Id}:{player.Name}", player.Mmr);
         }
 
         public void UpdatePlayer(LeaderBoardPlayer player)
