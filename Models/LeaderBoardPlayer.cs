@@ -7,6 +7,9 @@ namespace LeaderBoard.Models
         [Required]
         public string? Id { get; set; } = $"player:{Guid.NewGuid()}";
 
+        [Required] 
+        public string? Name { get; set; }
+
         [Required]
         public int Mmr { get; set; }
     }

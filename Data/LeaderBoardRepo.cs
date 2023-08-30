@@ -8,10 +8,12 @@ namespace LeaderBoard.Data
     public class LeaderBoardRepo : ILeaderBoardRepo
     {
         private readonly IConnectionMultiplexer _redis;
+        private readonly RedisKey _sortedSetKey;
 
         public LeaderBoardRepo(IConnectionMultiplexer redis)
         {
             _redis = redis;
+            _sortedSetKey = "Leaderboard";
         }
 
         public void DeletePlayer(LeaderBoardPlayer player)
@@ -23,15 +25,24 @@ namespace LeaderBoard.Data
         {
             var db = _redis.GetDatabase();
 
-            var completeSet = db.SetMembers("PlayersSet");
+            var leaderboardPlayers = db.SortedSetRangeByRankWithScores(_sortedSetKey, start: 0, stop: -1, order: Order.Descending);
 
-            if ( completeSet.Length > 0) 
+            foreach (var player in leaderboardPlayers)
             {
-                var obj = Array.ConvertAll(completeSet, val => JsonSerializer.Deserialize<LeaderBoardPlayer>(val)).ToList();
-                return obj;
-            }
+                var playerIdAndScore = player.ToString().Split(':');
+                var playerId = playerIdAndScore[1];
+                var playerName = playerIdAndScore[2];
+                var score = playerIdAndScore[3];
 
-            return null;
+
+
+                yield return new LeaderBoardPlayer
+                {
+                    Id = playerId,
+                    Name = playerName,
+                    Mmr = int.Parse(score)
+                };
+            }
         }
 
         public LeaderBoardPlayer? GetPlayer(string id)
@@ -39,7 +50,8 @@ namespace LeaderBoard.Data
             if (string.IsNullOrEmpty(id)) throw new ArgumentNullException(nameof(id));
 
             var db = _redis.GetDatabase();
-            var player = db.StringGet(id);
+
+            var player = db.HashGet("hashPlayer", id);
 
             if (!string.IsNullOrEmpty(player))
             {
@@ -54,12 +66,7 @@ namespace LeaderBoard.Data
 
             var db = _redis.GetDatabase();
 
-            var serialPlayer = JsonSerializer.Serialize(player);
-
-            db.StringSet(player.Id, serialPlayer);
-
-            // Usar isso para fazer a leaderboard em si ! ! !
-            db.SetAdd("PlayersSet", serialPlayer);
+            db.SortedSetAdd(_sortedSetKey, $"{player.Id}:{player.Name}", player.Mmr);
         }
 
         public void UpdatePlayer(LeaderBoardPlayer player)
