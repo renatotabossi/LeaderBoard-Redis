@@ -2,6 +2,7 @@
 using LeaderBoard.Models;
 using StackExchange.Redis;
 using System.Text.Json;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace LeaderBoard.Data
 {
@@ -9,13 +10,15 @@ namespace LeaderBoard.Data
     {
         private readonly IConnectionMultiplexer _redis;
         private readonly IDatabase _db;
-        private readonly RedisKey _sortedSetKey;
+        private readonly RedisKey _sortedSetLBKey;
+        private readonly RedisKey _sortedSetPlayerKey;
 
         public LeaderBoardRepo(IConnectionMultiplexer redis)
         {
             _redis = redis;
             _db = _redis.GetDatabase();
-            _sortedSetKey = "Leaderboard";
+            _sortedSetLBKey = "Leaderboard";
+            _sortedSetPlayerKey = "Players";
         }
 
         public void DeletePlayer(LeaderBoardPlayer player)
@@ -25,19 +28,21 @@ namespace LeaderBoard.Data
 
         public IEnumerable<LeaderBoardPlayer?>? GetAllPlayers()
         {
-            var leaderboardPlayers = _db.SortedSetRangeByRankWithScores(_sortedSetKey, start: 0, stop: -1, order: Order.Descending);
+            var leaderboardPlayers = _db.SortedSetRangeByRankWithScores(_sortedSetLBKey, start: 0, stop: -1, order: Order.Descending);
 
             foreach (var player in leaderboardPlayers)
             {
                 var playerIdAndScore = player.ToString().Split(':');
                 var playerId = playerIdAndScore[0];
-                var playerName = playerIdAndScore[1];
-                var score = playerIdAndScore[2];
+                var score = playerIdAndScore[1];
 
+                var playerName = _db.HashGet(_sortedSetPlayerKey, playerId);
+                var playerRank = _db.SortedSetRank(_sortedSetLBKey, playerId, Order.Descending);
 
 
                 yield return new LeaderBoardPlayer
                 {
+                    Rank = (int)playerRank! + 1,
                     Id = playerId,
                     Name = playerName,
                     Mmr = int.Parse(score)
@@ -49,20 +54,33 @@ namespace LeaderBoard.Data
         {
             if (string.IsNullOrEmpty(id)) throw new ArgumentNullException(nameof(id));
 
-            var player = _db.HashGet("hashPlayer", id);
+            var playerName = _db.HashGet(_sortedSetPlayerKey, id);
+            var playerRank = _db.SortedSetRank(_sortedSetLBKey, id);
+            var playerScore = _db.SortedSetScore(_sortedSetLBKey, id);
 
-            if (!string.IsNullOrEmpty(player))
+
+          
+
+            if (string.IsNullOrEmpty(playerName))
             {
-                return JsonSerializer.Deserialize<LeaderBoardPlayer>(player);
+                return null;
             }
-            return null;
+
+            return new LeaderBoardPlayer
+            {
+                Rank = (int)playerRank!,
+                Id = id,
+                Name = playerName,
+                Mmr = (int)playerScore!
+            };
         }
 
         public void InsertPlayer(LeaderBoardPlayer player)
         {
             if (player == null) throw new ArgumentNullException(nameof(player));
 
-            _db.SortedSetAdd(_sortedSetKey, $"{player.Id}:{player.Name}", player.Mmr);
+            _db.SortedSetAdd(_sortedSetLBKey,player.Id, player.Mmr);
+            _db.HashSet(_sortedSetPlayerKey, player.Id, player.Name);
         }
 
         public void UpdatePlayer(LeaderBoardPlayer player)
