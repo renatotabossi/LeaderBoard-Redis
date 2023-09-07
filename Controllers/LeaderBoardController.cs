@@ -28,12 +28,25 @@ namespace LeaderBoard.Controllers
             return NotFound();
         }
 
+        [HttpGet("name/{name}", Name = "GetPlayerByName")]
+        public ActionResult<LeaderBoardPlayer> GetPlayerByName(string name)
+        {
+            var player = _repo.GetPlayerByName(name);
+
+            if (player != null)
+            {
+                return Ok(player);
+            }
+
+            return NotFound();
+        }
+
         [HttpPost]
         public ActionResult<LeaderBoardPlayer> CreatePlayerOnLeaderBoard(LeaderBoardPlayer player)
         {
-            _repo.InsertPlayer(player);
+            _repo.UpsertPlayer(player);
 
-            return CreatedAtRoute(nameof(GetPlayerById), new { id = player.Id }, player);
+            return Ok();
         }
 
         [HttpGet]
