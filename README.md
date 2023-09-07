@@ -19,6 +19,7 @@ Welcome to the Leaderboard Backend repository! This project is a backend impleme
 - **Multiple Games:** You can configure the backend to manage leaderboards for different games or activities.
 - **Persistent Storage:** Redis, used as the main database, ensures fast and reliable data storage for the leaderboard.
 - **Dockerized Redis:** The Redis database is containerized using Docker, making deployment and scaling hassle-free.
+- Search by name and ID, insert of new score and incrementing old ones, easy to use and manage.
 
 ## Installation
 
@@ -87,6 +88,3 @@ Contributions are welcome! If you'd like to contribute to this project, please f
 
 This project is licensed under the [MIT License](LICENSE).
 
----
-
-Thank you for checking out the Leaderboard Backend project! If you have any questions or feedback, feel free to contact us.
